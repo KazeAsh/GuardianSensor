@@ -1,0 +1,364 @@
+{
+  "original_records": 60,
+  "cleaned_records": 60,
+  "records_removed": 0,
+  "removal_percentage": 0.0,
+  "missing_values_before": {
+    "timestamp": 0,
+    "engine_state": 0,
+    "door_state": 0,
+    "temperature_c": 0,
+    "weight_left_kg": 0,
+    "weight_right_kg": 0,
+    "motion_detected": 0,
+    "co2_level": 0,
+    "humidity": 0
+  },
+  "missing_values_after": {
+    "timestamp": 0,
+    "engine_state": 0,
+    "door_state": 0,
+    "temperature_c": 0,
+    "weight_left_kg": 0,
+    "weight_right_kg": 0,
+    "motion_detected": 0,
+    "co2_level": 0,
+    "humidity": 0,
+    "hour": 0,
+    "minute": 0,
+    "day_of_week": 0,
+    "temp_change": 0,
+    "temp_acceleration": 0,
+    "temp_danger_flag": 0,
+    "temp_warning_flag": 0,
+    "temp_risk": 0,
+    "total_weight": 0,
+    "occupancy": 0,
+    "child_detected": 0,
+    "adult_present": 0,
+    "co2_danger_flag": 0,
+    "co2_warning_flag": 0,
+    "co2_risk": 0,
+    "overall_risk": 0,
+    "emergency_flag": 0,
+    "parked_duration_min": 0,
+    "parked_too_long": 0
+  },
+  "data_types": {
+    "timestamp": "datetime64[ns]",
+    "engine_state": "object",
+    "door_state": "object",
+    "temperature_c": "float64",
+    "weight_left_kg": "float64",
+    "weight_right_kg": "float64",
+    "motion_detected": "bool",
+    "co2_level": "float64",
+    "humidity": "float64",
+    "hour": "int32",
+    "minute": "int32",
+    "day_of_week": "int32",
+    "temp_change": "float64",
+    "temp_acceleration": "float64",
+    "temp_danger_flag": "int32",
+    "temp_warning_flag": "int32",
+    "temp_risk": "float64",
+    "total_weight": "float64",
+    "occupancy": "int32",
+    "child_detected": "int32",
+    "adult_present": "int32",
+    "co2_danger_flag": "int32",
+    "co2_warning_flag": "int32",
+    "co2_risk": "float64",
+    "overall_risk": "float64",
+    "emergency_flag": "int32",
+    "parked_duration_min": "float64",
+    "parked_too_long": "int32"
+  },
+  "summary_statistics": {
+    "temperature_c": {
+      "count": 60.0,
+      "mean": 22.353166666666663,
+      "std": 2.876705090053765,
+      "min": 19.87,
+      "25%": 20.56,
+      "50%": 21.130000000000003,
+      "75%": 22.8125,
+      "max": 30.81
+    },
+    "weight_left_kg": {
+      "count": 60.0,
+      "mean": 15.0,
+      "std": 0.0,
+      "min": 15.0,
+      "25%": 15.0,
+      "50%": 15.0,
+      "75%": 15.0,
+      "max": 15.0
+    },
+    "weight_right_kg": {
+      "count": 60.0,
+      "mean": 50.0,
+      "std": 35.65370164061463,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 75.0,
+      "75%": 75.0,
+      "max": 75.0
+    },
+    "co2_level": {
+      "count": 60.0,
+      "mean": 652.2509927805557,
+      "std": 164.28060642316075,
+      "min": 413.2149013304506,
+      "25%": 514.1260149530076,
+      "50%": 628.5445183662989,
+      "75%": 774.0503849344809,
+      "max": 996.5896615430768
+    },
+    "humidity": {
+      "count": 60.0,
+      "mean": 50.986509853725174,
+      "std": 11.744323296191272,
+      "min": 30.340715467258697,
+      "25%": 42.965462070875496,
+      "50%": 51.97821119939042,
+      "75%": 61.71203869969978,
+      "max": 68.9199622274817
+    },
+    "hour": {
+      "count": 60.0,
+      "mean": 16.666666666666668,
+      "std": 0.4753826885415284,
+      "min": 16.0,
+      "25%": 16.0,
+      "50%": 17.0,
+      "75%": 17.0,
+      "max": 17.0
+    },
+    "minute": {
+      "count": 60.0,
+      "mean": 29.5,
+      "std": 17.46424919657298,
+      "min": 0.0,
+      "25%": 14.75,
+      "50%": 29.5,
+      "75%": 44.25,
+      "max": 59.0
+    },
+    "day_of_week": {
+      "count": 60.0,
+      "mean": 3.0,
+      "std": 0.0,
+      "min": 3.0,
+      "25%": 3.0,
+      "50%": 3.0,
+      "75%": 3.0,
+      "max": 3.0
+    },
+    "temp_change": {
+      "count": 60.0,
+      "mean": -0.016500000000000032,
+      "std": 1.5409735256582644,
+      "min": -10.23,
+      "25%": -0.3099999999999996,
+      "50%": 0.129999999999999,
+      "75%": 0.7674999999999983,
+      "max": 1.4500000000000028
+    },
+    "temp_acceleration": {
+      "count": 60.0,
+      "mean": 0.0053333333333332785,
+      "std": 2.388949465355557,
+      "min": -11.07,
+      "25%": -1.0374999999999988,
+      "50%": 0.0,
+      "75%": 0.9999999999999991,
+      "max": 11.060000000000002
+    },
+    "temp_danger_flag": {
+      "count": 60.0,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 0.0,
+      "max": 0.0
+    },
+    "temp_warning_flag": {
+      "count": 60.0,
+      "mean": 0.15,
+      "std": 0.3600847357902755,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 0.0,
+      "max": 1.0
+    },
+    "temp_risk": {
+      "count": 60.0,
+      "mean": 0.024726190476190468,
+      "std": 0.07133881669174205,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 0.0,
+      "max": 0.34357142857142847
+    },
+    "total_weight": {
+      "count": 60.0,
+      "mean": 65.0,
+      "std": 35.65370164061463,
+      "min": 15.0,
+      "25%": 15.0,
+      "50%": 90.0,
+      "75%": 90.0,
+      "max": 90.0
+    },
+    "occupancy": {
+      "count": 60.0,
+      "mean": 1.0,
+      "std": 0.0,
+      "min": 1.0,
+      "25%": 1.0,
+      "50%": 1.0,
+      "75%": 1.0,
+      "max": 1.0
+    },
+    "child_detected": {
+      "count": 60.0,
+      "mean": 0.3333333333333333,
+      "std": 0.4753826885415284,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 1.0,
+      "max": 1.0
+    },
+    "adult_present": {
+      "count": 60.0,
+      "mean": 0.6666666666666666,
+      "std": 0.4753826885415283,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 1.0,
+      "75%": 1.0,
+      "max": 1.0
+    },
+    "co2_danger_flag": {
+      "count": 60.0,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 0.0,
+      "max": 0.0
+    },
+    "co2_warning_flag": {
+      "count": 60.0,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 0.0,
+      "max": 0.0
+    },
+    "co2_risk": {
+      "count": 60.0,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 0.0,
+      "max": 0.0
+    },
+    "overall_risk": {
+      "count": 60.0,
+      "mean": 0.024726190476190468,
+      "std": 0.07133881669174205,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 0.0,
+      "max": 0.34357142857142847
+    },
+    "emergency_flag": {
+      "count": 60.0,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 0.0,
+      "max": 0.0
+    },
+    "parked_duration_min": {
+      "count": 60.0,
+      "mean": 3.1675384438888887,
+      "std": 5.628858173030818,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 4.251177291666667,
+      "max": 19.005160316666668
+    },
+    "parked_too_long": {
+      "count": 60.0,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "25%": 0.0,
+      "50%": 0.0,
+      "75%": 0.0,
+      "max": 0.0
+    }
+  },
+  "outlier_analysis": {
+    "temperature": {
+      "anomalies": 0,
+      "details": [
+        "WARNING: 9 readings between 26\u00b0C and 40\u00b0C",
+        "RAPID CHANGE: 1 readings with change > 3.5\u00b0C/min",
+        "STATISTICAL: 2 readings outside [13.8, 29.6]\u00b0C"
+      ]
+    },
+    "co2": {
+      "anomalies": 0,
+      "details": []
+    },
+    "parked_duration": {
+      "anomalies": 0,
+      "details": []
+    }
+  },
+  "safety_analysis": {
+    "temperature_safety": {
+      "danger_count": 0,
+      "warning_count": 9,
+      "max_temperature": 30.81,
+      "min_temperature": 19.87,
+      "avg_temperature": 22.353166666666663
+    },
+    "co2_safety": {
+      "danger_count": 0,
+      "warning_count": 0,
+      "max_co2": 996.5896615430768,
+      "avg_co2": 652.2509927805557
+    },
+    "occupancy_status": {
+      "occupied_count": 60,
+      "max_weight": 90.0,
+      "child_detected_count": 20
+    },
+    "risk_assessment": {
+      "high_risk_count": 0,
+      "medium_risk_count": 1,
+      "low_risk_count": 59,
+      "max_risk": 0.34357142857142847,
+      "avg_risk": 0.024726190476190468
+    }
+  }
+}
