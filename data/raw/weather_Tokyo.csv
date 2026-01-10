@@ -1,2 +1,2 @@
-city,Time Stamp,temperature_celsius,humidity,weather,Source
-Tokyo,2026-01-06 14:49:14.438494,-262.59,18,few clouds,OpenWeatherMap
+city,timestamp,temperature_c,humidity,pressure,weather,wind_speed,source
+Tokyo,2026-01-10 18:20:31.091961,23.58706242454628,54.05984040422295,1019.387949187994,clear,2.9815579453185723,MockData

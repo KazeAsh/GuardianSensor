@@ -13,9 +13,9 @@ class DataCollector:
     # Collect real data from weather in Japan
     def collect_weather_data(self, city="Tokyo"):
         # Using OpenWeatherMap API (free version)
-        # You need to get your own API key from openweathermap.org
-        api_key = "YOUR_API_KEY_HERE"  # Replace with your actual API key
-        if api_key == "YOUR_API_KEY_HERE":
+       
+        api_key = "API_WEATHER"  # Replace with your actual API key
+        if api_key == "API_WEATHER":
             print("Warning: Please set your OpenWeatherMap API key in data_collector.py")
             print("Get a free API key from: https://openweathermap.org/api")
             return self.generate_mock_weather_data(city)
