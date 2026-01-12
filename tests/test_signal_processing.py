@@ -2,7 +2,10 @@
 import numpy as np
 import scipy.signal as signal
 from utils.mmwave_simulator import MMWaveSimulator
+from utils.data_collector import DataCollector
+from risk.risk_assessor import RadarRiskAssessor
 import matplotlib.pyplot as plt
+import os
 
 print("🚗 GuardianSensor - Signal Processing Test")
 print("=" * 50)
@@ -88,11 +91,76 @@ except Exception as e:
     print(f"      Heart Rate: {vital_signs['heart_rate_bpm']} BPM (simulated)")
     print(f"      Breathing Rate: {vital_signs['breathing_rate_bpm']} BPM (simulated)")
 
+# 5. Test weather data collection
+print("\n5. Testing weather data collection...")
+collector = DataCollector()
+weather_data = collector.collect_weather_data("Tokyo")
+print(f"   ✅ Weather data collected for Tokyo:")
+print(f"      Temperature: {weather_data['temperature_c'].iloc[0]:.1f}°C")
+print(f"      Humidity: {weather_data['humidity'].iloc[0]}%")
+print(f"      Weather: {weather_data['weather'].iloc[0]}")
+
+# 6. Test risk assessment with weather integration
+print("\n6. Testing risk assessment with weather...")
+assessor = RadarRiskAssessor()
+
+# Simulate car sensor data
+car_sensors = {
+    'temperature_c': weather_data['temperature_c'].iloc[0] + 10,  # Car is hotter than outside
+    'humidity': weather_data['humidity'].iloc[0],
+    'time_elapsed_minutes': 15,
+    'engine_running': False,
+    'doors_locked': True,
+    'ac_status': 'off'
+}
+
+# Environmental data from weather
+environmental = {
+    'outside_temp_c': weather_data['temperature_c'].iloc[0],
+    'humidity_percent': weather_data['humidity'].iloc[0],
+    'weather_condition': weather_data['weather'].iloc[0],
+    'wind_speed_mps': 2.5,  # Mock wind speed
+    'uv_index': 5  # Mock UV index
+}
+
+# Radar data from processing
+radar_data = {
+    'vital_signs': vital_signs,
+    'child_detected': True,
+    'confidence': 0.85
+}
+
+time_elapsed_min = car_sensors['time_elapsed_minutes']
+
+risk_assessment = assessor.assess_risk(radar_data, car_sensors, environmental, time_elapsed_min)
+print(f"   ✅ Risk assessment complete:")
+print(f"      Total Risk: {risk_assessment['total_risk']:.2f}")
+print(f"      Risk Level: {risk_assessment['risk_level']}")
+print(f"      Recommended Actions: {len(risk_assessment['recommended_actions'])} actions suggested")
+
+# 7. Test different car scenarios
+print("\n7. Testing different car scenarios...")
+
+scenarios = [
+    {"name": "Hot Summer Day", "temp_offset": 15, "time": 30, "expected_risk": "HIGH"},
+    {"name": "Mild Weather", "temp_offset": 5, "time": 10, "expected_risk": "MEDIUM"},
+    {"name": "Cold Winter", "temp_offset": -5, "time": 20, "expected_risk": "MEDIUM"},
+]
+
+for scenario in scenarios:
+    car_sensors_scenario = car_sensors.copy()
+    car_sensors_scenario['temperature_c'] = weather_data['temperature_c'].iloc[0] + scenario['temp_offset']
+    car_sensors_scenario['time_elapsed_minutes'] = scenario['time']
+    
+    risk = assessor.assess_risk(radar_data, car_sensors_scenario, environmental, scenario['time'])
+    print(f"   {scenario['name']}: Risk {risk['total_risk']:.2f} ({risk['risk_level']})")
+
 print("\n" + "=" * 50)
 print("✅ Signal processing test complete!")
-print("\n🎯 For Woven Toyota Application:")
-print("   This demonstrates:")
 print("   • mmWave radar signal generation")
 print("   • Basic signal processing (FFT, peak detection)")
 print("   • Vital sign extraction algorithms")
 print("   • Data visualization and analysis")
+print("   • Weather data integration")
+print("   • Risk assessment with environmental factors")
+print("   • Multi-scenario testing")

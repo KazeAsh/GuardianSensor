@@ -1,156 +1,308 @@
 import cv2
 import numpy as np
 import os
+import logging
 from ultralytics import YOLO
 import pandas as pd
+from typing import List, Dict, Tuple, Optional
+from dataclasses import dataclass
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Detection:
+    """Data class for detection results"""
+    class_name: str
+    confidence: float
+    bbox: Tuple[float, float, float, float]
+    in_car_seat: bool
+    image_path: str
+    detection_id: str
+
 
 class ChildDetector:
-    """Detects children in car seats using YOLO"""
+    """
+    Detects children in car seats using YOLOv8 object detection.
     
-    def __init__(self, model_path=None):
-        # Use pre-trained YOLOv8 model (can detect 'person' class)
-        if model_path and os.path.exists(model_path):
-            self.model = YOLO(model_path)
-        else:
-            # Use small YOLOv8 model
-            self.model = YOLO('yolov8n.pt')  # This downloads automatically
+    This detector identifies persons in vehicle interiors and applies
+    heuristics to determine if they are likely children in car seats.
+    """
+    
+    # Class constants
+    COCO_PERSON_CLASS_ID = 0
+    DEFAULT_CONFIDENCE_THRESHOLD = 0.5
+    DEFAULT_MODEL = 'yolov8n.pt'
+    
+    # Car seat region parameters
+    CAR_SEAT_REGION_LOWER_BOUND = 0.5  # Lower 50% of image
+    MAX_CHILD_SIZE_RATIO = 0.3  # Max 30% of image area
+    
+    def __init__(self, model_path: Optional[str] = None, 
+                 confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD):
+        """
+        Initialize the ChildDetector with YOLO model.
         
-        self.child_class_id = 0  # 'person' class in COCO
-        self.confidence_threshold = 0.5
+        Args:
+            model_path (Optional[str]): Path to custom YOLO model. 
+                                       Uses default if not provided.
+            confidence_threshold (float): Minimum confidence score (0-1).
         
-    def detect_in_image(self, image_path):
-        """Detect children in a single image"""
-        results = self.model(image_path, conf=self.confidence_threshold)
+        Raises:
+            FileNotFoundError: If custom model_path doesn't exist.
+            ValueError: If confidence_threshold is not in valid range.
+        """
+        if confidence_threshold < 0 or confidence_threshold > 1:
+            raise ValueError(f"Confidence threshold must be between 0 and 1, got {confidence_threshold}")
         
-        detections = []
-        for result in results:
-            boxes = result.boxes
-            if boxes is not None:
-                for box in boxes:
+        self.confidence_threshold = confidence_threshold
+        self.child_class_id = self.COCO_PERSON_CLASS_ID
+        
+        try:
+            if model_path and os.path.exists(model_path):
+                logger.info(f"Loading custom model from: {model_path}")
+                self.model = YOLO(model_path)
+            else:
+                logger.info(f"Loading default model: {self.DEFAULT_MODEL}")
+                self.model = YOLO(self.DEFAULT_MODEL)
+            logger.info("Model loaded successfully")
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            raise
+    
+    def detect_in_image(self, image_path: str) -> List[Detection]:
+        """
+        Detect children in a single image.
+        
+        Args:
+            image_path (str): Path to the image file.
+        
+        Returns:
+            List[Detection]: List of Detection objects with details.
+        
+        Raises:
+            FileNotFoundError: If image file doesn't exist.
+            ValueError: If image cannot be read.
+        """
+        if not os.path.exists(image_path):
+            raise FileNotFoundError(f"Image not found: {image_path}")
+        
+        try:
+            results = self.model(image_path, conf=self.confidence_threshold, verbose=False)
+            detections = []
+            
+            for result in results:
+                boxes = result.boxes
+                if boxes is None or len(boxes) == 0:
+                    continue
+                
+                for idx, box in enumerate(boxes):
                     class_id = int(box.cls[0])
-                    confidence = float(box.conf[0])
+                    if class_id != self.child_class_id:
+                        continue
                     
-                    if class_id == self.child_class_id:
-                        # Bounding box coordinates
-                        x1, y1, x2, y2 = box.xyxy[0].tolist()
-                        
-                        # Calculate if in car seat region (heuristic)
-                        in_car_seat = self._is_in_car_seat_region(x1, y1, x2, y2)
-                        
-                        detection = {
-                            'class': 'child',
-                            'confidence': confidence,
-                            'bbox': [x1, y1, x2, y2],
-                            'in_car_seat': in_car_seat,
-                            'image_path': image_path
-                        }
-                        detections.append(detection)
-        
-        return detections
+                    confidence = float(box.conf[0])
+                    x1, y1, x2, y2 = [float(v) for v in box.xyxy[0]]
+                    
+                    in_car_seat = self._is_in_car_seat_region(
+                        x1, y1, x2, y2, result.orig_shape
+                    )
+                    
+                    detection = Detection(
+                        class_name='person',
+                        confidence=confidence,
+                        bbox=(x1, y1, x2, y2),
+                        in_car_seat=in_car_seat,
+                        image_path=image_path,
+                        detection_id=f"{os.path.basename(image_path)}_{idx}_{datetime.now().timestamp()}"
+                    )
+                    detections.append(detection)
+            
+            logger.info(f"Found {len(detections)} detections in {image_path}")
+            return detections
+            
+        except Exception as e:
+            logger.error(f"Error processing image {image_path}: {e}")
+            raise
     
-    def _is_in_car_seat_region(self, x1, y1, x2, y2):
-        """Heuristic to check if detection is in car seat area"""
-        # Car seats are typically in bottom half of image
-        image_center_y = 480 / 2  # Assuming 640x480 image
-        bbox_center_y = (y1 + y2) / 2
+    def _is_in_car_seat_region(self, x1: float, y1: float, x2: float, y2: float, 
+                               image_shape: Tuple[int, int]) -> bool:
+        """
+        Determine if detection is likely in a car seat region using heuristics.
         
-        # Also consider size - children are smaller than adults
+        Args:
+            x1, y1, x2, y2 (float): Bounding box coordinates.
+            image_shape (Tuple[int, int]): Original image dimensions (height, width).
+        
+        Returns:
+            bool: True if detection appears to be in car seat region.
+        """
+        image_height, image_width = image_shape[:2]
+        
+        # Calculate bbox properties
+        bbox_center_y = (y1 + y2) / 2
         bbox_height = y2 - y1
         bbox_width = x2 - x1
         bbox_area = bbox_height * bbox_width
+        image_area = image_height * image_width
         
-        # Heuristic rules
-        is_lower_half = bbox_center_y > image_center_y
-        is_small_size = bbox_area < (640 * 480 * 0.3)  # Less than 30% of image
+        # Apply heuristic rules
+        is_lower_half = bbox_center_y > (image_height * self.CAR_SEAT_REGION_LOWER_BOUND)
+        is_appropriate_size = bbox_area < (image_area * self.MAX_CHILD_SIZE_RATIO)
         
-        return is_lower_half and is_small_size
+        return is_lower_half and is_appropriate_size
     
-    def process_video_stream(self, video_path, output_path="output.mp4"):
-        """Process video and save results"""
-        cap = cv2.VideoCapture(video_path)
-        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = int(cap.get(cv2.CAP_PROP_FPS))
+    def process_video_stream(self, video_path: str, 
+                            output_path: str = "output.mp4",
+                            max_frames: Optional[int] = None) -> Tuple[str, pd.DataFrame]:
+        """
+        Process video stream and save annotated output with detections.
         
-        # Define video writer
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+        Args:
+            video_path (str): Path to input video file.
+            output_path (str): Path for output annotated video.
+            max_frames (Optional[int]): Maximum frames to process (None = all).
         
-        frame_count = 0
-        all_detections = []
+        Returns:
+            Tuple[str, pd.DataFrame]: Output video path and detection DataFrame.
         
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
+        Raises:
+            FileNotFoundError: If video file doesn't exist.
+            IOError: If video cannot be read or written.
+        """
+        if not os.path.exists(video_path):
+            raise FileNotFoundError(f"Video file not found: {video_path}")
+        
+        try:
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                raise IOError(f"Cannot open video: {video_path}")
             
-            # Detect children
-            results = self.model(frame, conf=self.confidence_threshold)
+            frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            fps = int(cap.get(cv2.CAP_PROP_FPS))
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             
-            child_count = 0
-            for result in results:
-                boxes = result.boxes
-                if boxes is not None:
+            logger.info(f"Video: {frame_width}x{frame_height} @ {fps}fps, {total_frames} frames")
+            
+            # Setup video writer
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+            
+            if not out.isOpened():
+                raise IOError(f"Cannot write to output video: {output_path}")
+            
+            frame_count = 0
+            all_detections = []
+            
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
+                # Run detection
+                results = self.model(frame, conf=self.confidence_threshold, verbose=False)
+                child_count = 0
+                
+                for result in results:
+                    boxes = result.boxes
+                    if boxes is None:
+                        continue
+                    
                     for box in boxes:
-                        if int(box.cls[0]) == self.child_class_id:
-                            child_count += 1
-                            # Draw bounding box
-                            x1, y1, x2, y2 = map(int, box.xyxy[0])
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                            cv2.putText(frame, f"Child: {box.conf[0]:.2f}", 
-                                      (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 
-                                      0.5, (0, 0, 255), 2)
+                        if int(box.cls[0]) != self.child_class_id:
+                            continue
+                        
+                        child_count += 1
+                        x1, y1, x2, y2 = map(int, box.xyxy[0])
+                        confidence = float(box.conf[0])
+                        
+                        # Draw bounding box
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                        cv2.putText(frame, f"Child: {confidence:.2f}", 
+                                  (x1, max(y1 - 10, 20)), 
+                                  cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                
+                # Add overlays
+                self._add_frame_info(frame, frame_count, child_count, fps)
+                out.write(frame)
+                
+                all_detections.append({
+                    'frame_number': frame_count,
+                    'timestamp_seconds': frame_count / fps,
+                    'child_count': child_count,
+                    'video_path': video_path
+                })
+                
+                frame_count += 1
+                
+                if max_frames and frame_count >= max_frames:
+                    logger.info(f"Reached max frame limit: {max_frames}")
+                    break
             
-            # Add child count overlay
-            cv2.putText(frame, f"Children detected: {child_count}", 
-                       (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            cap.release()
+            out.release()
             
-            # Add timestamp
-            cv2.putText(frame, f"Frame: {frame_count}", 
-                       (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            detection_df = pd.DataFrame(all_detections)
+            logger.info(f"Processed {frame_count} frames, saved to {output_path}")
             
-            out.write(frame)
+            return output_path, detection_df
             
-            # Save detection data
-            all_detections.append({
-                'frame': frame_count,
-                'child_count': child_count,
-                'timestamp': frame_count / fps
-            })
-            
-            frame_count += 1
-            
-            # Early exit for testing
-            if frame_count > 100:  # Process first 100 frames
-                break
-        
-        cap.release()
-        out.release()
-        
-        # Save detection log
-        pd.DataFrame(all_detections).to_csv("data/processed/video_detections.csv", index=False)
-        
-        return output_path
+        except Exception as e:
+            logger.error(f"Error processing video: {e}")
+            raise
+    
+    @staticmethod
+    def _add_frame_info(frame: np.ndarray, frame_num: int, 
+                        child_count: int, fps: int) -> None:
+        """Add informational overlays to frame."""
+        cv2.putText(frame, f"Children Detected: {child_count}", 
+                   (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
+        cv2.putText(frame, f"Frame: {frame_num}", 
+                   (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
-# Create a simple training script to fine-tune on car interior images
-def create_training_data():
-    """Create annotated training data for fine-tuning"""
+
+def create_training_annotations(image_dir: str = "data/raw", 
+                               output_path: str = "data/processed/annotations.json") -> None:
+    """
+    Create COCO format annotations for model fine-tuning.
+    
+    Args:
+        image_dir (str): Directory containing training images.
+        output_path (str): Path to save annotations file.
+    """
     import json
     
-    # Create COCO format annotations
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
     coco_format = {
+        "info": {
+            "description": "Child in car seat detection dataset",
+            "version": "1.0",
+            "year": datetime.now().year
+        },
         "images": [],
         "annotations": [],
         "categories": [{"id": 1, "name": "child_in_carseat"}]
     }
     
-    # Load our synthetic images
-    image_dir = "data/raw"
-    image_files = [f for f in os.listdir(image_dir) if f.endswith('.jpg')]
+    if not os.path.exists(image_dir):
+        logger.warning(f"Image directory not found: {image_dir}")
+        return
+    
+    image_files = sorted([f for f in os.listdir(image_dir) if f.lower().endswith(('.jpg', '.png'))])
+    metadata_file = os.path.join(image_dir, "image_metadata.csv")
+    
+    metadata = pd.read_csv(metadata_file) if os.path.exists(metadata_file) else None
     
     annotation_id = 1
     for i, img_file in enumerate(image_files):
-        # Add image info
         coco_format["images"].append({
             "id": i,
             "file_name": img_file,
@@ -158,56 +310,33 @@ def create_training_data():
             "height": 480
         })
         
-        # Check metadata for annotations
-        metadata_file = f"{image_dir}/image_metadata.csv"
-        if os.path.exists(metadata_file):
-            metadata = pd.read_csv(metadata_file)
-            img_meta = metadata[metadata['image_id'] == img_file.replace('.jpg', '')]
+        if metadata is not None:
+            img_id = img_file.replace('.jpg', '').replace('.png', '')
+            img_meta = metadata[metadata['image_id'] == img_id]
             
-            if not img_meta.empty and img_meta.iloc[0]['has_child']:
-                # Add annotation (using estimated bbox for car seat)
+            if not img_meta.empty and img_meta.iloc[0].get('has_child', False):
                 coco_format["annotations"].append({
                     "id": annotation_id,
                     "image_id": i,
                     "category_id": 1,
-                    "bbox": [100, 200, 200, 200],  # [x, y, width, height]
-                    "area": 200 * 200,
+                    "bbox": [100, 200, 200, 200],
+                    "area": 40000,
                     "iscrowd": 0
                 })
                 annotation_id += 1
     
-    # Save annotations
-    with open("data/processed/annotations.json", "w") as f:
+    with open(output_path, 'w') as f:
         json.dump(coco_format, f, indent=2)
     
-    print(f"Created {annotation_id-1} annotations for training")
+    logger.info(f"Created {annotation_id - 1} annotations saved to {output_path}")
 
-# Main script
+
 if __name__ == "__main__":
-    print("=== Child Detection System ===")
+    logger.info("=== Child Detection System Initialized ===")
     
-    # Create training data
-    create_training_data()
-    
-    # Test detector on a sample image
-    detector = ChildDetector()
-    
-    # Create a test image if none exists
-    test_image = "data/raw/test_detection.jpg"
-    if not os.path.exists(test_image):
-        # Create a simple test image
-        img = np.zeros((480, 640, 3), dtype=np.uint8)
-        # Draw a "child" in car seat
-        cv2.rectangle(img, (150, 250), (250, 350), (255, 200, 200), -1)
-        cv2.imwrite(test_image, img)
-    
-    # Run detection
-    detections = detector.detect_in_image(test_image)
-    
-    print(f"\nDetection Results:")
-    if detections:
-        for det in detections:
-            print(f"  Child detected: {det['confidence']:.2f} confidence")
-            print(f"  In car seat: {det['in_car_seat']}")
-    else:
-        print("  No children detected")
+    try:
+        create_training_annotations()
+        detector = ChildDetector()
+        logger.info("System ready for detection")
+    except Exception as e:
+        logger.error(f"Initialization failed: {e}")

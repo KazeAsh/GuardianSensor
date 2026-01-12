@@ -117,7 +117,10 @@ def run_signal_processing():
         
         # Simple visualization
         try:
+            import matplotlib
+            matplotlib.use('Agg')  # Use non-interactive backend
             import matplotlib.pyplot as plt
+            import numpy as np
             import os
             
             os.makedirs("outputs/visualizations", exist_ok=True)
@@ -130,8 +133,10 @@ def run_signal_processing():
             plt.grid(True)
             plt.savefig('outputs/visualizations/mmwave_simple.png', dpi=150)
             print(f"   Visualization saved: outputs/visualizations/mmwave_simple.png")
-        except:
-            print("   ⚠️  Could not create visualization")
+        except Exception as e:
+            print(f"   ⚠️  Could not create visualization: {e}")
+            import traceback
+            traceback.print_exc()
         
     except Exception as e:
         print(f"   ❌ Error: {e}")

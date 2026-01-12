@@ -2,7 +2,9 @@ from fastapi import APIRouter, HTTPException
 from datetime import datetime
 import psutil
 import os
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["health"])
 
 @router.get("/health")
@@ -22,8 +24,12 @@ async def health_check():
         ]
         
         directory_status = {}
+        missing_dirs = []
         for dir_path in data_dirs:
-            directory_status[dir_path] = os.path.exists(dir_path)
+            exists = os.path.exists(dir_path)
+            directory_status[dir_path] = exists
+            if not exists:
+                missing_dirs.append(dir_path)
         
         health_status = {
             "status": "healthy",
@@ -40,25 +46,44 @@ async def health_check():
             "environment": os.getenv('ENVIRONMENT', 'development')
         }
         
-        # Add warning if disk space is low
+        # Check thresholds
+        if cpu_percent > 80 or memory.percent > 85:
+            health_status["status"] = "degraded"
+            health_status["warning"] = "High resource usage"
+        
         if disk.percent > 90:
             health_status["status"] = "degraded"
-            health_status["warning"] = "Low disk space"
+            if "warning" in health_status:
+                health_status["warning"] += "; Low disk space"
+            else:
+                health_status["warning"] = "Low disk space"
+        
+        if missing_dirs:
+            health_status["status"] = "degraded"
+            health_status["missing_directories"] = missing_dirs
         
         return health_status
         
     except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
         raise HTTPException(status_code=503, detail=f"Health check failed: {str(e)}")
 
 @router.get("/health/ready")
 async def readiness_probe():
     """Kubernetes readiness probe endpoint"""
-    # Check if application is ready to receive traffic
-    # Add your readiness checks here (database connections, etc.)
-    return {"status": "ready"}
+    try:
+        # Check required directories exist
+        required_dirs = ['data', 'outputs']
+        for dir_path in required_dirs:
+            if not os.path.exists(dir_path):
+                raise HTTPException(status_code=503, detail=f"Required directory missing: {dir_path}")
+        
+        return {"status": "ready"}
+    except Exception as e:
+        logger.error(f"Readiness check failed: {str(e)}")
+        raise HTTPException(status_code=503, detail="Not ready")
 
 @router.get("/health/live")
 async def liveness_probe():
     """Kubernetes liveness probe endpoint"""
-    # Simple check if application is running
-    return {"status": "alive"}
+    return {"status": "alive", "timestamp": datetime.now().isoformat()}

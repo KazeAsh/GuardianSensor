@@ -2,9 +2,8 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Tuple
 import json
-from scipy import stats
 
 # Clean and validate data for GardianSeat project
 class DataCleaningPipeline:
@@ -246,7 +245,7 @@ class DataCleaningPipeline:
             parked_segments = []
             current_segment = []
             
-            for i, (state, time) in enumerate(zip(df['engine_state'], df['timestamp'])):
+            for state, time in zip(df['engine_state'], df['timestamp']):
                 if state == 'off':
                     current_segment.append(time)
                 elif current_segment:
@@ -342,7 +341,7 @@ class DataCleaningPipeline:
             engine_off_time = None
             parked_duration = []
             
-            for i, (state, time) in enumerate(zip(df['engine_state'], df['timestamp'])):
+            for state, time in zip(df['engine_state'], df['timestamp']):
                 if state == 'off':
                     if engine_off_time is None:
                         engine_off_time = time
@@ -492,10 +491,6 @@ class DataCleaningPipeline:
             }
         
         # Risk assessment
-        risk_scores = []
-        if 'overall_risk' in df.columns:
-            risk_scores = df['overall_risk'].tolist()
-        
         analysis['risk_assessment'] = {
             'high_risk_count': int((df['overall_risk'] > 0.7).sum()) if 'overall_risk' in df.columns else 0,
             'medium_risk_count': int(((df['overall_risk'] > 0.3) & (df['overall_risk'] <= 0.7)).sum()) 

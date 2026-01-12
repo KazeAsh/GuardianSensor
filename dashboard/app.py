@@ -56,7 +56,7 @@ with st.sidebar:
     # Vehicle selection
     vehicle_id = st.selectbox(
         "Select Vehicle",
-        ["TOYOTA-001", "TOYOTA-002", "TOYOTA-003", "TOYOTA-004"]
+        ["Toyota-001", "Mazda-002", "Subaru-003", "Honda-004"]
     )
     
     # Time range
@@ -375,7 +375,7 @@ with tab4:
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: gray;">
-    <p>GuardianSeat Safety System | Built for Woven by Toyota Internship Application</p>
-    <p>⚠️ This is a demonstration system. In production, this would connect to real vehicle sensors.</p>
+    <p>GuardianSeat Safety System | Built with safety in mind for all</p>
+    <p>⚠️ This is a demonstration system.</p>
 </div>
 """, unsafe_allow_html=True)

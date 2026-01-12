@@ -47,7 +47,7 @@ switch ($Command.ToLower()) {
         if (Test-Path "venv\Scripts\activate.ps1") {
             & .\venv\Scripts\activate.ps1
         }
-        & python -m pytest tests/ -v
+        & .\venv\Scripts\python.exe -m pytest tests/ -v
     }
     
     "process" {

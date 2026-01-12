@@ -43,9 +43,8 @@ class MMWaveProcessor:
         )
         
         # Notch filter for powerline interference (50/60 Hz)
-        self.notch_sos = signal.iirnotch(
-            50, 30, self.fs  # Remove 50 Hz interference
-        )
+        b, a = signal.iirnotch(50, 30, self.fs)  # Remove 50 Hz interference
+        self.notch_sos = signal.tf2sos(b, a)
     
     def process_iq_data(self, iq_data: np.ndarray) -> Dict:
         """

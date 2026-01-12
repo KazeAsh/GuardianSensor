@@ -2,6 +2,15 @@
 Write-Host "🚗 GuardianSensor - Complete System Test" -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Yellow
 
+# Activate virtual environment if it exists
+if (Test-Path "venv\Scripts\activate.ps1") {
+    Write-Host "`nActivating virtual environment..." -ForegroundColor Cyan
+    & .\venv\Scripts\activate.ps1
+} else {
+    Write-Host "`n⚠️  Virtual environment not found. Run .\launch.ps1 setup first." -ForegroundColor Yellow
+    exit 1
+}
+
 # 1. Test imports
 Write-Host "`n1. Testing Python imports..." -ForegroundColor Cyan
 python -c "

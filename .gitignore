@@ -110,3 +110,59 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Test files and directories
+tests/__pycache__/
+*.test
+*.test.*
+docker-compose.test.yml
+dockerfile.test
+Dockerfile.test
+requirements-test.txt
+test_all.ps1
+test_*.ps1
+
+# Test outputs and temporary data
+outputs/test_*/
+data/test_*/
+temp/
+tmp/
+
+# Log files
+*.log
+logs/
+
+# IDE and editor files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# API keys and secrets (add your actual secret files)
+secrets.json
+.env.local
+config/secrets.py
+
+# Generated documentation
+docs/build/
+docs/source/_build/
+
+# Backup files
+*.bak
+*.backup
+*.old
